@@ -269,7 +269,10 @@ class Loss_SceneFlow_SelfSup(nn.Module):
             assert(sf_f.size()[2:4] == sf_b.size()[2:4])
             assert(sf_f.size()[2:4] == disp_l1.size()[2:4])
             assert(sf_f.size()[2:4] == disp_l2.size()[2:4])
-            
+            #sf_f = min -3.6 max 3.6 grad_fn = upsamplebilinear2dbackwards size: [4,3,256,832)
+            #sf_b = min -3.7 max 3.56 grad_fn = upsamplebilinear2dbackwards size: [4,3,256,832)
+            #disp_l1 = min 0.1054 max 0.2294 grad_fn = upsamplebilinear2dbackwards size: [4,1,256,832)
+            #disp_l2 = min 0.1122 max 0.2287 grad_fn = upsamplebilinear2dbackwards size: [4,1,256,832)
             ## For image reconstruction loss
             img_l1_aug = interpolate2d_as(target_dict["input_l1_aug"], sf_f)
             img_l2_aug = interpolate2d_as(target_dict["input_l2_aug"], sf_b)
