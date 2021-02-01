@@ -165,6 +165,9 @@ class Loss_SceneFlow_SelfSup(nn.Module):
         self._sf_3d_sm = 200
 
     def depth_loss_left_img(self, disp_l, disp_r, img_l_aug, img_r_aug, ii):
+        #img r aug 0 and 1
+        #disp l 0.10 0.22 
+        
 
         img_r_warp = _generate_image_left(img_r_aug, disp_l)
         left_occ = _adaptive_disocc_detection_disp(disp_r).detach()
