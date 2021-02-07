@@ -204,9 +204,10 @@ class Loss_SceneFlow_SelfSup(nn.Module):
         _, pts2_tf, coord2 = pts2pixel_ms(k2_scale, pts2, sf_b, [h_dp, w_dp]) 
 
         pts2_warp = reconstructPts(coord1, pts2)
+        #min -2.25 max 2.87
         pts1_warp = reconstructPts(coord2, pts1) 
-        #flow f min -2.49e+08 max 5.43e+08
         
+        #flow f min -2.49e+08 max 5.43e+08
         flow_f = projectSceneFlow2Flow(k1_scale, sf_f, disp_l1)
         flow_b = projectSceneFlow2Flow(k2_scale, sf_b, disp_l2)
         occ_map_b = _adaptive_disocc_detection(flow_f).detach() * disp_occ_l2
