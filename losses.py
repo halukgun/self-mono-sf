@@ -174,17 +174,18 @@ class Loss_SceneFlow_SelfSup(nn.Module):
 
         ## Photometric loss
         img_diff = (_elementwise_l1(img_l_aug, img_r_warp) * (1.0 - self._ssim_w) + _SSIM(img_l_aug, img_r_warp) * self._ssim_w).mean(dim=1, keepdim=True)        
-        loss_img = (img_diff[left_occ]).mean()
+        #img diff min 0 max 1.0554 size=[4,1,256,832]
+        loss_img = (img_diff[left_occ]).mean() #0.4012 
         img_diff[~left_occ].detach_()
 
         ## Disparities smoothness
-        loss_smooth = _smoothness_motion_2nd(disp_l, img_l_aug, beta=10.0).mean() / (2 ** ii)
+        loss_smooth = _smoothness_motion_2nd(disp_l, img_l_aug, beta=10.0).mean() / (2 ** ii) #0.0009
 
         return loss_img + self._disp_smooth_w * loss_smooth, left_occ
 
 
     def sceneflow_loss(self, sf_f, sf_b, disp_l1, disp_l2, disp_occ_l1, disp_occ_l2, k_l1_aug, k_l2_aug, img_l1_aug, img_l2_aug, aug_size, ii):
-
+        
         _, _, h_dp, w_dp = sf_f.size()
         disp_l1 = disp_l1 * w_dp
         disp_l2 = disp_l2 * w_dp
@@ -196,13 +197,16 @@ class Loss_SceneFlow_SelfSup(nn.Module):
 
         pts1, k1_scale = pixel2pts_ms(k_l1_aug, disp_l1, local_scale / aug_size)
         pts2, k2_scale = pixel2pts_ms(k_l2_aug, disp_l2, local_scale / aug_size)
-
+        #sf_f min -3.8314 max 3.6551
+        #sf_b min -3.7203 max 3.5687
+        
         _, pts1_tf, coord1 = pts2pixel_ms(k1_scale, pts1, sf_f, [h_dp, w_dp])
         _, pts2_tf, coord2 = pts2pixel_ms(k2_scale, pts2, sf_b, [h_dp, w_dp]) 
 
         pts2_warp = reconstructPts(coord1, pts2)
         pts1_warp = reconstructPts(coord2, pts1) 
-
+        #flow f min -2.49e+08 max 5.43e+08
+        
         flow_f = projectSceneFlow2Flow(k1_scale, sf_f, disp_l1)
         flow_b = projectSceneFlow2Flow(k2_scale, sf_b, disp_l2)
         occ_map_b = _adaptive_disocc_detection(flow_f).detach() * disp_occ_l2
@@ -214,6 +218,7 @@ class Loss_SceneFlow_SelfSup(nn.Module):
 
         img_diff1 = (_elementwise_l1(img_l1_aug, img_l2_warp) * (1.0 - self._ssim_w) + _SSIM(img_l1_aug, img_l2_warp) * self._ssim_w).mean(dim=1, keepdim=True)
         img_diff2 = (_elementwise_l1(img_l2_aug, img_l1_warp) * (1.0 - self._ssim_w) + _SSIM(img_l2_aug, img_l1_warp) * self._ssim_w).mean(dim=1, keepdim=True)
+        #img diff 1 min 0 max 1.0650
         loss_im1 = img_diff1[occ_map_f].mean()
         loss_im2 = img_diff2[occ_map_b].mean()
         img_diff1[~occ_map_f].detach_()
@@ -222,8 +227,10 @@ class Loss_SceneFlow_SelfSup(nn.Module):
         
         ## Point reconstruction Loss
         pts_norm1 = torch.norm(pts1, p=2, dim=1, keepdim=True)
+        #pts norm 1 min=1.4151 max=3.75
         pts_norm2 = torch.norm(pts2, p=2, dim=1, keepdim=True)
         pts_diff1 = _elementwise_epe(pts1_tf, pts2_warp).mean(dim=1, keepdim=True) / (pts_norm1 + 1e-8)
+        #min 7.32e-06 max 2.26
         pts_diff2 = _elementwise_epe(pts2_tf, pts1_warp).mean(dim=1, keepdim=True) / (pts_norm2 + 1e-8)
         loss_pts1 = pts_diff1[occ_map_f].mean()
         loss_pts2 = pts_diff2[occ_map_b].mean()
